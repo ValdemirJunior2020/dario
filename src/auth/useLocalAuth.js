@@ -11,6 +11,7 @@ export function useLocalAuth() {
     } catch (_) {}
   }, []);
 
+  // <-- This is the function App.js passes into <Login onLogin={login} />
   const login = (username, password) => {
     const key = (username || "").trim().toLowerCase();
     const u = USERS[key];
@@ -28,8 +29,11 @@ export function useLocalAuth() {
     setUser(null);
   };
 
-  const isAuthed = !!user;
-  const isAdmin = user?.role === "admin";
-
-  return { isAuthed, isAdmin, user, login, logout };
+  return {
+    isAuthed: !!user,
+    isAdmin: user?.role === "admin",
+    user,
+    login,
+    logout,
+  };
 }

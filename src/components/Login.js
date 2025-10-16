@@ -1,79 +1,61 @@
-import React, { useState } from "react";
-import { Card, Form, Button } from "react-bootstrap";
+import { useState } from "react";
+import { Form, Button, Card, InputGroup } from "react-bootstrap";
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const submit = (e) => {
     e.preventDefault();
-
-    // Hardcoded users (kept in code, not Firebase)
-    const users = {
-      junior: { role: "admin", password: "12345678" },
-      dario: { role: "viewer", password: "123" },
-    };
-
-    const user = users[username.toLowerCase()];
-    if (user && user.password === password) {
-      onLogin(username, user.role);
-    } else {
-      setError("Invalid username or password");
-    }
+    const res = onLogin(username, password); // <-- matches useLocalAuth.login
+    if (!res.ok) setError(res.error || "Login failed");
   };
 
   return (
-    <div
-      className="d-flex justify-content-center align-items-center"
-      style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}
-    >
-      <Card style={{ width: "22rem", padding: "1.5rem" }}>
-        <h4 className="text-center mb-3">Contractor HQ — Sign In</h4>
-
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3" controlId="username">
-            <Form.Label>Username</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder="Enter username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-            <Form.Text className="text-muted">
-              Admin: <strong>junior</strong> | Viewer: <strong>dario</strong>
-            </Form.Text>
-          </Form.Group>
-
-          <Form.Group className="mb-3" controlId="password">
-            <Form.Label>Password</Form.Label>
-            <div className="input-group">
+    <div className="d-flex align-items-center justify-content-center vh-100 p-3 bg-light">
+      <Card style={{ maxWidth: 420, width: "100%" }} className="shadow-sm">
+        <Card.Body>
+          <h5 className="mb-3 text-center">Contractor HQ — Sign In</h5>
+          <Form onSubmit={submit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Username</Form.Label>
               <Form.Control
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                placeholder="Enter username"
+                autoFocus
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
-              <Button
-                variant="outline-secondary"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </Button>
-            </div>
-          </Form.Group>
+              <Form.Text className="text-muted">
+                Users: <b>junior</b> (admin) or <b>dario</b> (viewer)
+              </Form.Text>
+            </Form.Group>
 
-          {error && (
-            <div className="alert alert-danger text-center py-1">{error}</div>
-          )}
+            <Form.Group className="mb-3">
+              <Form.Label>Password</Form.Label>
+              <InputGroup>
+                <Form.Control
+                  type={showPwd ? "text" : "password"}
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <Button
+                  variant="outline-secondary"
+                  onClick={() => setShowPwd((s) => !s)}
+                  type="button"
+                >
+                  {showPwd ? "Hide" : "Show"}
+                </Button>
+              </InputGroup>
+            </Form.Group>
 
-          <Button variant="primary" type="submit" className="w-100 mt-2">
-            Sign In
-          </Button>
-        </Form>
+            {error && <div className="text-danger mb-2">{error}</div>}
+
+            <Button type="submit" className="w-100">Sign In</Button>
+          </Form>
+        </Card.Body>
       </Card>
     </div>
   );
