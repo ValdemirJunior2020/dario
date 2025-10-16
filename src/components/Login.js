@@ -1,79 +1,79 @@
-// src/components/Login.js
-import { useEffect, useState } from "react";
-import { Form, Button, Card, InputGroup } from "react-bootstrap";
+import React, { useState } from "react";
+import { Card, Form, Button } from "react-bootstrap";
 
-export default function Login({ onLogin, isAuthed }) {
+export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
-  // If already signed in, jump to Jobs
-  useEffect(() => {
-    if (isAuthed && typeof window !== "undefined") {
-      window.location.hash = "#/"; // hard redirect
-    }
-  }, [isAuthed]);
-
-  const submit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const res = onLogin(username, password);
-    if (!res.ok) {
-      setError(res.error || "Login failed");
-      return;
-    }
-    // After successful login, go to Jobs
-    if (typeof window !== "undefined") {
-      window.location.hash = "#/";
+
+    // Hardcoded users (kept in code, not Firebase)
+    const users = {
+      junior: { role: "admin", password: "12345678" },
+      dario: { role: "viewer", password: "123" },
+    };
+
+    const user = users[username.toLowerCase()];
+    if (user && user.password === password) {
+      onLogin(username, user.role);
+    } else {
+      setError("Invalid username or password");
     }
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-center vh-100 p-3 bg-light">
-      <Card style={{ maxWidth: 420, width: "100%" }} className="shadow-sm">
-        <Card.Body>
-          <h5 className="mb-3 text-center">Contractor HQ — Sign In</h5>
-          <Form onSubmit={submit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Username</Form.Label>
+    <div
+      className="d-flex justify-content-center align-items-center"
+      style={{ minHeight: "100vh", backgroundColor: "#f8f9fa" }}
+    >
+      <Card style={{ width: "22rem", padding: "1.5rem" }}>
+        <h4 className="text-center mb-3">Contractor HQ — Sign In</h4>
+
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3" controlId="username">
+            <Form.Label>Username</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="Enter username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+            <Form.Text className="text-muted">
+              Admin: <strong>junior</strong> | Viewer: <strong>dario</strong>
+            </Form.Text>
+          </Form.Group>
+
+          <Form.Group className="mb-3" controlId="password">
+            <Form.Label>Password</Form.Label>
+            <div className="input-group">
               <Form.Control
-                placeholder="Enter username"
-                autoFocus
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
-              <Form.Text className="text-muted">
-                Admins: <b>junior</b> | Viewers: <b>dario</b>
-              </Form.Text>
-            </Form.Group>
+              <Button
+                variant="outline-secondary"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </Button>
+            </div>
+          </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Password</Form.Label>
-              <InputGroup>
-                <Form.Control
-                  type={showPwd ? "text" : "password"}
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <Button
-                  variant="outline-secondary"
-                  onClick={() => setShowPwd((s) => !s)}
-                  type="button"
-                >
-                  {showPwd ? "Hide" : "Show"}
-                </Button>
-              </InputGroup>
-              <Form.Text className="text-muted">
-                Admin pwd: <b>12345678</b> | Viewer pwd: <b>123</b>
-              </Form.Text>
-            </Form.Group>
+          {error && (
+            <div className="alert alert-danger text-center py-1">{error}</div>
+          )}
 
-            {error && <div className="text-danger mb-2">{error}</div>}
-
-            <Button type="submit" className="w-100">Sign In</Button>
-          </Form>
-        </Card.Body>
+          <Button variant="primary" type="submit" className="w-100 mt-2">
+            Sign In
+          </Button>
+        </Form>
       </Card>
     </div>
   );
