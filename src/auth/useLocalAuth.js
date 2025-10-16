@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react";
-import { AUTH_KEY, HARDCODED_USER } from "./constants";
+import { AUTH_KEY, USERS } from "./constants";
 
 export function useLocalAuth() {
-  const [isAuthed, setIsAuthed] = useState(false);
+  const [user, setUser] = useState(null); // { username, role, displayName }
 
   useEffect(() => {
-    setIsAuthed(localStorage.getItem(AUTH_KEY) === "ok");
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      if (raw) setUser(JSON.parse(raw));
+    } catch (_) {}
   }, []);
 
   const login = (username, password) => {
-    if (
-      username.trim().toLowerCase() === HARDCODED_USER.username &&
-      password === HARDCODED_USER.password
-    ) {
-      localStorage.setItem(AUTH_KEY, "ok");
-      setIsAuthed(true);
+    const key = (username || "").trim().toLowerCase();
+    const u = USERS[key];
+    if (u && password === u.password) {
+      const payload = { username: key, role: u.role, displayName: u.displayName };
+      localStorage.setItem(AUTH_KEY, JSON.stringify(payload));
+      setUser(payload);
       return { ok: true };
     }
     return { ok: false, error: "Invalid username or password" };
@@ -22,8 +25,11 @@ export function useLocalAuth() {
 
   const logout = () => {
     localStorage.removeItem(AUTH_KEY);
-    setIsAuthed(false);
+    setUser(null);
   };
 
-  return { isAuthed, login, logout };
+  const isAuthed = !!user;
+  const isAdmin = user?.role === "admin";
+
+  return { isAuthed, isAdmin, user, login, logout };
 }
