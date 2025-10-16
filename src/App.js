@@ -1,4 +1,3 @@
-// src/App.js
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useLocalAuth } from "./auth/useLocalAuth";
 import Login from "./components/Login";
@@ -20,7 +19,11 @@ export default function App() {
       {isAuthed && <Topbar onLogout={logout} user={user} isAdmin={isAdmin} />}
 
       <Routes>
-        <Route path="/login" element={<Login onLogin={login} />} />
+        {/* If already authed, bounce away from /login to home */}
+        <Route
+          path="/login"
+          element={isAuthed ? <Navigate to="/" replace /> : <Login onLogin={login} />}
+        />
 
         <Route
           path="/"
@@ -30,7 +33,6 @@ export default function App() {
             </Protected>
           }
         />
-
         <Route
           path="/job/:id"
           element={
@@ -39,7 +41,6 @@ export default function App() {
             </Protected>
           }
         />
-
         <Route
           path="/reports"
           element={
@@ -49,10 +50,7 @@ export default function App() {
           }
         />
 
-        <Route
-          path="*"
-          element={<Navigate to={isAuthed ? "/" : "/login"} replace />}
-        />
+        <Route path="*" element={<Navigate to={isAuthed ? "/" : "/login"} replace />} />
       </Routes>
     </Router>
   );

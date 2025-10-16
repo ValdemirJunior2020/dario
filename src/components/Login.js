@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Form, Button, Card, InputGroup } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 
 export default function Login({ onLogin }) {
+  const nav = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -9,8 +11,13 @@ export default function Login({ onLogin }) {
 
   const submit = (e) => {
     e.preventDefault();
-    const res = onLogin(username, password); // <-- matches useLocalAuth.login
-    if (!res.ok) setError(res.error || "Login failed");
+    const res = onLogin(username, password);
+    if (res?.ok) {
+      // ✅ go to Jobs board after login
+      nav("/", { replace: true });
+    } else {
+      setError(res?.error || "Invalid username or password");
+    }
   };
 
   return (
