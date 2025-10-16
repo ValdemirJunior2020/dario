@@ -13,12 +13,13 @@ export default function JobsBoard({ isAdmin, user }) {
   const [confirmDel, setConfirmDel] = useState({ show: false, job: null });
 
   const handleSaveNew = (form) => {
-    addJob(form, user);           // log creator
+    addJob(form, user); // log who created the job
     setShowAdd(false);
   };
+
   const handleSaveEdit = (form) => {
     if (!isAdmin) return;
-    updateJob(editJob.id, form, user); // log editor
+    updateJob(editJob.id, form, user);
     setEditJob(null);
   };
 
@@ -26,6 +27,7 @@ export default function JobsBoard({ isAdmin, user }) {
     <Container className="py-3">
       <div className="d-flex align-items-center justify-content-between mb-3">
         <h5 className="mb-0">Jobs</h5>
+        {/* ✅ Add Job only visible to admin */}
         {isAdmin && <Button onClick={() => setShowAdd(true)}>Add Job</Button>}
       </div>
 
@@ -65,16 +67,22 @@ export default function JobsBoard({ isAdmin, user }) {
           </Col>
         ))}
         {!jobs.length && (
-          <Col className="text-center text-muted py-5">No jobs yet.{isAdmin ? " Add your first job." : ""}</Col>
+          <Col className="text-center text-muted py-5">
+            No jobs yet.{isAdmin ? " Add your first job." : ""}
+          </Col>
         )}
       </Row>
 
-      {/* Add */}
+      {/* ✅ Add form (admin-only) */}
       {isAdmin && (
-        <JobForm show={showAdd} onClose={() => setShowAdd(false)} onSave={handleSaveNew} />
+        <JobForm
+          show={showAdd}
+          onClose={() => setShowAdd(false)}
+          onSave={handleSaveNew}
+        />
       )}
 
-      {/* Edit */}
+      {/* ✅ Edit form (admin-only) */}
       {isAdmin && editJob && (
         <JobForm
           show={true}
@@ -84,14 +92,14 @@ export default function JobsBoard({ isAdmin, user }) {
         />
       )}
 
-      {/* Delete confirm */}
+      {/* ✅ Delete confirm (admin-only) */}
       <Confirm
         show={confirmDel.show}
         title="Delete Job?"
         body={`This will permanently remove "${confirmDel.job?.title}".`}
         onClose={() => setConfirmDel({ show: false, job: null })}
         onConfirm={() => {
-          if (confirmDel.job) removeJob(confirmDel.job.id, user); // pass actor
+          if (confirmDel.job) removeJob(confirmDel.job.id, user);
           setConfirmDel({ show: false, job: null });
         }}
       />

@@ -1,41 +1,43 @@
 /* eslint-disable */
-// src/hooks/useJobs.js
 import { useEffect, useMemo, useState } from "react";
-import { db } from "../firebase";
-import {
-  collection, onSnapshot, query, orderBy,
-  addDoc, doc, updateDoc, deleteDoc, getDoc, arrayUnion
-} from "firebase/firestore";
+import { getFirebase } from "../firebase";
 
-const STATUSES = ["lead","quoted","approved","rejected","in_progress","completed","paid"];
+const STATUSES = ["lead", "quoted", "approved", "rejected", "in_progress", "completed", "paid"];
 
-const now = () => new Date().toISOString();
-const entry = (action, actor, extra = {}) => ({
-  id: "h" + Date.now() + Math.random().toString(36).slice(2, 6),
-  ts: now(),
-  action,
-  actor: actor ? {
-    username: actor.username,
-    role: actor.role,
-    displayName: actor.displayName,
-  } : null,
-  ...extra,
-});
+function now() { return new Date().toISOString(); }
+function entry(action, actor, extra = {}) {
+  return {
+    id: "h" + Date.now() + Math.random().toString(36).slice(2, 6),
+    ts: now(),
+    action,
+    actor: actor ? {
+      username: actor.username,
+      role: actor.role,
+      displayName: actor.displayName,
+    } : null,
+    ...extra,
+  };
+}
 
-export function useJobs() {
+export function useJobsFirestore() {
+  const { db } = getFirebase();
   const [rawJobs, setRawJobs] = useState([]);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
+  // subscribe
   useEffect(() => {
+    const { collection, onSnapshot, query, orderBy } = require("firebase/firestore");
     const ref = collection(db, "jobs");
     const q = query(ref, orderBy("createdAt", "desc"));
     const unsub = onSnapshot(q, (snap) => {
-      setRawJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setRawJobs(arr);
     });
     return () => unsub();
-  }, []);
+  }, [db]);
 
+  // helpers
   const recalc = (j) => {
     const expSum = (j.expenses || []).reduce((s, e) => s + Number(e.amount || 0), 0);
     const bid = Number(j?.estimate?.totalBidToClient || 0);
@@ -44,10 +46,12 @@ export function useJobs() {
     return { ...j, expSum, profit, marginPct };
   };
 
+  // CRUD
   const addJob = async (job, actor = null) => {
+    const { collection, addDoc, serverTimestamp } = require("firebase/firestore");
     const ref = collection(db, "jobs");
-    const payload = {
-      createdAt: now(),
+    const doc = {
+      createdAt: now(), // keeping ISO for sorting same as local
       createdBy: actor ? actor.username : null,
       status: "lead",
       trade: "painting",
@@ -56,28 +60,35 @@ export function useJobs() {
       history: [entry("job.create", actor, { title: job?.title || "" })],
       ...job,
     };
-    const res = await addDoc(ref, payload);
+    const res = await addDoc(ref, doc);
     return res.id;
   };
 
   const updateJob = async (jobId, patch, actor = null) => {
+    const { doc, updateDoc, arrayUnion } = require("firebase/firestore");
     const ref = doc(db, "jobs", jobId);
     const historyItem = entry("job.update", actor, { fieldsChanged: Object.keys(patch || {}) });
-    await updateDoc(ref, { ...patch, history: arrayUnion(historyItem) });
+    await updateDoc(ref, {
+      ...patch,
+      history: arrayUnion(historyItem),
+    });
   };
 
   const setStatus = async (jobId, status, reasonIfRejected = "", actor = null) => {
     if (!STATUSES.includes(status)) return;
+    const { doc, updateDoc, arrayUnion } = require("firebase/firestore");
     const ref = doc(db, "jobs", jobId);
     const historyItem = entry("status.change", actor, { to: status, reasonIfRejected });
     await updateDoc(ref, { status, reasonIfRejected, history: arrayUnion(historyItem) });
   };
 
   const removeJob = async (jobId) => {
+    const { doc, deleteDoc } = require("firebase/firestore");
     await deleteDoc(doc(db, "jobs", jobId));
   };
 
   const addExpense = async (jobId, exp, actor = null) => {
+    const { doc, updateDoc, getDoc } = require("firebase/firestore");
     const ref = doc(db, "jobs", jobId);
     const snap = await getDoc(ref);
     const j = snap.data() || {};
@@ -89,6 +100,7 @@ export function useJobs() {
   };
 
   const deleteExpense = async (jobId, expenseId, actor = null) => {
+    const { doc, updateDoc, getDoc } = require("firebase/firestore");
     const ref = doc(db, "jobs", jobId);
     const snap = await getDoc(ref);
     const j = snap.data() || {};
@@ -98,8 +110,8 @@ export function useJobs() {
     await updateDoc(ref, { expenses, history: [...(j.history || []), historyItem] });
   };
 
+  // computed & filtered
   const computed = useMemo(() => rawJobs.map(recalc), [rawJobs]);
-
   const jobs = useMemo(() => {
     let out = computed;
     if (filter !== "all") out = out.filter((j) => j.status === filter);
